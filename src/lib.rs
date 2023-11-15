@@ -134,14 +134,17 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
         .send()
         .await?;
 
-    if client.status().is_success() {
-        println!("Repo created successfully");
-        let remote_url = format!("git@github.com:{}/{}.git", auth.username, config.repo_name);
-        println!("Push at : {remote_url}");
-    } else {
-        let response = serde_json::from_str::<GhapiErrorResponse>(&client.text().await?).unwrap();
-        eprintln!("Received Error: {}", response.errors[0].message);
-        eprintln!("Repo was not created");
+    match client.status().is_success() {
+        true => {
+            println!("Repo created successfully");
+            let remote_url = format!("git@github.com:{}/{}.git", auth.username, config.repo_name);
+            println!("Push at : {remote_url}");
+        }
+        false => {
+            let response = serde_json::from_str::<GhapiErrorResponse>(&client.text().await?).unwrap();
+            eprintln!("Received Error: {}", response.errors[0].message);
+            eprintln!("Repo was not created");
+        }
     }
 
     Ok(())
