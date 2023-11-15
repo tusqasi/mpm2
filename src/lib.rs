@@ -1,5 +1,21 @@
 use std::{error::Error, fs::{self, OpenOptions}, process, env, io::Write};
 use reqwest;
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct GhapiError{
+    resource:String,
+    message: String,
+    field:String,
+    code:String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct GhapiErrorResponse{
+    message: String,
+    errors: Vec<GhapiError>,
+    documentation_url:String
+}
 
 pub struct Config {
     pub repo_name: String,
@@ -123,6 +139,8 @@ pub async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
         let remote_url = format!("git@github.com:{}/{}.git", auth.username, config.repo_name);
         println!("Push at : {remote_url}");
     } else {
+        let response = serde_json::from_str::<GhapiErrorResponse>(&client.text().await?).unwrap();
+        eprintln!("Received Error: {}", response.errors[0].message);
         eprintln!("Repo was not created");
     }
 
